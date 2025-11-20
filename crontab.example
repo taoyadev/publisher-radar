@@ -1,0 +1,20 @@
+# Sellers.json Daily Update Crontab
+#
+# To install:
+# 1. Edit this file with your actual project path
+# 2. Run: crontab -e
+# 3. Add the line below (adjust time as needed)
+#
+# Format: minute hour day month weekday command
+# This runs daily at 2:00 AM
+
+# Daily update at 2:00 AM
+0 2 * * * /Users/butterfly/.claude/newdev/seller-json/scripts/run-daily-update.sh
+
+# Alternative: Run every 6 hours
+# 0 */6 * * * /Users/butterfly/.claude/newdev/seller-json/scripts/run-daily-update.sh
+
+# Alternative: Run at midnight
+# 0 0 * * * /Users/butterfly/.claude/newdev/seller-json/scripts/run-daily-update.sh
+
+# Check logs at: /Users/butterfly/.claude/newdev/seller-json/logs/

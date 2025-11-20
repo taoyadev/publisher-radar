@@ -1,0 +1,105 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/db';
+import { ApiResponse, Seller } from '@/lib/types';
+import { validateSearchParams } from '@/lib/validation';
+import { rateLimit, getRateLimitHeaders } from '@/lib/api-rate-limit';
+import { ZodError } from 'zod';
+
+export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResult = await rateLimit(request, 'search');
+  if (rateLimitResult) return rateLimitResult;
+
+  try {
+    // Validate input parameters
+    const validation = validateSearchParams(request.nextUrl.searchParams);
+
+    if (!validation.success) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          data: null,
+          error: `Invalid parameters: ${validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const params = validation.data;
+
+    // Build WHERE clause
+    const conditions: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (params.query) {
+      conditions.push(`(seller_id ILIKE $${paramCount} OR domain ILIKE $${paramCount})`);
+      values.push(`%${params.query}%`);
+      paramCount++;
+    }
+
+    if (params.seller_type) {
+      conditions.push(`seller_type = $${paramCount}`);
+      values.push(params.seller_type);
+      paramCount++;
+    }
+
+    if (params.has_domain !== undefined) {
+      if (params.has_domain === 'true') {
+        conditions.push('domain IS NOT NULL');
+      } else {
+        conditions.push('domain IS NULL');
+      }
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Optimized: Get both count and data in a single query using window function
+    const offset = (params.page! - 1) * params.limit!;
+    const combinedQuery = `
+      SELECT
+        *,
+        COUNT(*) OVER() as total_count
+      FROM seller_adsense.sellers
+      ${whereClause}
+      ORDER BY ${params.sort_by} ${params.sort_order === 'asc' ? 'ASC' : 'DESC'}
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+    `;
+
+    const result = await query(combinedQuery, [...values, params.limit, offset]);
+
+    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
+    const data = result.rows.map(row => {
+      const { total_count, ...seller } = row;
+      return seller;
+    }) as Seller[];
+
+    const rateLimitHeaders = getRateLimitHeaders(request, 'search');
+
+    return NextResponse.json<ApiResponse<Seller[]>>(
+      {
+        data,
+        error: null,
+        total,
+        page: params.page,
+        limit: params.limit,
+      },
+      { headers: rateLimitHeaders }
+    );
+  } catch (error) {
+    // Log detailed error for debugging (server-side only)
+    console.error('[API Error] /api/sellers/search:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Return generic error message to client (don't expose internal details)
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        data: null,
+        error: 'An error occurred while processing your search. Please try again later.',
+      },
+      { status: 500 }
+    );
+  }
+}
