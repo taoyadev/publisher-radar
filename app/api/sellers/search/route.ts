@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json<ApiResponse<null>>(
         {
           data: null,
-          error: `Invalid parameters: ${validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`,
+          error: `Invalid parameters: ${validation.error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`,
         },
         { status: 400 }
       );
