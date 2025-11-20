@@ -205,7 +205,7 @@ export default async function NewDomainsPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>{Math.round(domain.max_confidence * 100)}% confidence</span>
+                      <span>{Math.round((domain.max_confidence || 0) * 100)}% confidence</span>
                     </div>
                   </div>
 
