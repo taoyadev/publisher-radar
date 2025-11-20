@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { getOrganizationSchema, getWebsiteSchema } from '@/lib/structured-data';
 import Header from '@/components/Header';
@@ -13,7 +13,9 @@ export const metadata: Metadata = {
   keywords: 'adsense publishers, sellers.json, publisher directory, adsense analytics, publisher search, programmatic advertising',
   authors: [{ name: 'Publisher Radar' }],
   creator: 'Publisher Radar',
-  metadataBase: new URL('https://publisherradar.com'),
+  ...(process.env.NEXT_PUBLIC_APP_URL && {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL)
+  }),
   alternates: {
     canonical: '/',
   },
@@ -25,10 +27,6 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/site.webmanifest',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#2563EB' },
-    { media: '(prefers-color-scheme: dark)', color: '#1E40AF' },
-  ],
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -48,6 +46,13 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#2563EB' },
+    { media: '(prefers-color-scheme: dark)', color: '#1E40AF' },
+  ],
 };
 
 export default function RootLayout({

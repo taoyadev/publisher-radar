@@ -22,10 +22,8 @@
     "https-proxy-agent": "^7.0.6",
     "next": "15.1.4",
     "pg": "^8.16.3",
-    "puppeteer": "^24.24.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "xlsx": "^0.18.5",
     "zod": "4.1.12"
   },
   "devDependencies": {
