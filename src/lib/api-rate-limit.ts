@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { API_LIMITS } from '@/config/api-limits';
+import { RATE_LIMITS } from '@/config/api-limits';
 
 interface RateLimitEntry {
   tokens: number;
@@ -126,18 +126,18 @@ class TokenBucket {
 
 // Rate limiters for different endpoint types
 const defaultLimiter = new TokenBucket(
-  API_LIMITS.API_ROUTES.DEFAULT,
-  API_LIMITS.API_ROUTES.DEFAULT / 60 // per second
+  RATE_LIMITS.API_ROUTES.DEFAULT,
+  RATE_LIMITS.API_ROUTES.DEFAULT / 60 // per second
 );
 
 const searchLimiter = new TokenBucket(
-  API_LIMITS.API_ROUTES.SEARCH,
-  API_LIMITS.API_ROUTES.SEARCH / 60
+  RATE_LIMITS.API_ROUTES.SEARCH,
+  RATE_LIMITS.API_ROUTES.SEARCH / 60
 );
 
 const heavyLimiter = new TokenBucket(
-  API_LIMITS.API_ROUTES.HEAVY,
-  API_LIMITS.API_ROUTES.HEAVY / 60
+  RATE_LIMITS.API_ROUTES.HEAVY,
+  RATE_LIMITS.API_ROUTES.HEAVY / 60
 );
 
 /**
