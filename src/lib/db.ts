@@ -14,18 +14,17 @@ const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
 
 const poolConfig: PoolConfig = isProduction
   ? {
-      // Production configuration (Supabase direct connection)
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
+      // Production configuration (Direct connection to VPS)
+      host: process.env.DB_HOST || '93.127.133.204',
+      port: parseInt(process.env.DB_PORT || '54322'),
       database: process.env.DB_NAME || 'postgres',
       user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || '',
+      password: process.env.DB_PASSWORD || 'postgres',
       max: isBuild ? 50 : 20, // More connections during build
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      // No SSL for direct VPS connection
+      ssl: false,
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
     }
