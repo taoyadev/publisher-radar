@@ -1,4 +1,4 @@
-import { Pool, PoolConfig, QueryResult } from 'pg';
+import { Pool, PoolConfig, QueryResult, QueryResultRow } from 'pg';
 
 // ============================================================================
 // DATABASE CONNECTION CONFIGURATION
@@ -90,7 +90,7 @@ pool.on('remove', () => {
  * @param params - Query parameters
  * @returns Query result
  */
-export async function query<T extends any = any>(
+export async function query<T extends QueryResultRow = any>(
   text: string,
   params?: any[]
 ): Promise<QueryResult<T>> {
