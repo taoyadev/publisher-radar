@@ -90,7 +90,7 @@ pool.on('remove', () => {
  * @param params - Query parameters
  * @returns Query result
  */
-export async function query<T = any>(
+export async function query<T extends any = any>(
   text: string,
   params?: any[]
 ): Promise<QueryResult<T>> {
