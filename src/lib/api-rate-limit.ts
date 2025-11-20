@@ -42,8 +42,8 @@ function getClientId(request: NextRequest): string {
     return realIp;
   }
 
-  // Fallback to remote address
-  return request.ip || 'unknown';
+  // Fallback to unknown
+  return 'unknown';
 }
 
 /**
