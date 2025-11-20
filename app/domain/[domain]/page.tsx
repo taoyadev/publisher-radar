@@ -226,7 +226,7 @@ export default async function DomainPage({ params }: PageProps) {
                       : 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  {source === 'both' ? '✓ Double Verified' : source.replace('_', ' ')}
+                  {source === 'both' ? '✓ Double Verified' : source?.replace('_', ' ') || 'Unknown'}
                 </span>
               ))}
               <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
