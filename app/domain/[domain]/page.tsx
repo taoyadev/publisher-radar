@@ -22,19 +22,11 @@ export const dynamicParams = true;
 // ============================================================================
 
 /**
- * Pre-generate top 5K domains
+ * Pure SSR - No static generation
  */
 export async function generateStaticParams() {
-  try {
-    const topDomains = await fetchTopDomains(5000);
-
-    return topDomains.map(domain => ({
-      domain,
-    }));
-  } catch (error) {
-    console.error('[SSG] Error generating domain static params:', error);
-    return [];
-  }
+  // Return empty array - all pages will be generated on-demand (SSR)
+  return [];
 }
 
 // ============================================================================

@@ -17,19 +17,11 @@ export const dynamicParams = true;
 // ============================================================================
 
 /**
- * Pre-generate all TLD pages (typically <500 TLDs)
+ * Pure SSR - No static generation
  */
 export async function generateStaticParams() {
-  try {
-    const tlds = await fetchAllTlds();
-
-    return tlds.map(tld => ({
-      tld,
-    }));
-  } catch (error) {
-    console.error('[SSG] Error generating TLD static params:', error);
-    return [];
-  }
+  // Return empty array - all pages will be generated on-demand (SSR)
+  return [];
 }
 
 // ============================================================================

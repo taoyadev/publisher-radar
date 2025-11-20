@@ -16,20 +16,11 @@ export const dynamicParams = true;
 // ============================================================================
 
 /**
- * Pre-generate first 10 pages for popular TLDs
+ * Pure SSR - No static generation
  */
 export async function generateStaticParams() {
-  const popularTlds = ['com', 'org', 'net', 'io', 'co'];
-  const params: { tld: string; page: string }[] = [];
-
-  for (const tld of popularTlds) {
-    // Generate first 10 pages for each popular TLD
-    for (let i = 1; i <= 10; i++) {
-      params.push({ tld, page: i.toString() });
-    }
-  }
-
-  return params;
+  // Return empty array - all pages will be generated on-demand (SSR)
+  return [];
 }
 
 // ============================================================================

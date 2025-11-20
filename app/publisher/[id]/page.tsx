@@ -27,21 +27,12 @@ export const dynamicParams = true; // Allow dynamic routes beyond static params
 // ============================================================================
 
 /**
- * Generate static params for top 10K publishers
- * Remaining publishers will be generated on-demand (ISR)
+ * Pure SSR - No static generation
+ * All pages generated on-demand for better build performance
  */
 export async function generateStaticParams() {
-  try {
-    const topPublisherIds = await fetchTopPublisherIds(10000);
-
-    return topPublisherIds.map(id => ({
-      id,
-    }));
-  } catch (error) {
-    console.error('[SSG] Error generating static params:', error);
-    // Return empty array on error - all pages will be generated on-demand
-    return [];
-  }
+  // Return empty array - all pages will be generated on-demand (SSR)
+  return [];
 }
 
 // ============================================================================
