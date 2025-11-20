@@ -39,12 +39,6 @@ const nextConfig: NextConfig = {
         destination: '/publisher/:id',
         permanent: true, // 301 redirect
       },
-      // Redirect old capitalized URL to lowercase
-      {
-        source: '/AdSense-reverse-lookup',
-        destination: '/adsense-reverse-lookup',
-        permanent: true, // 301 redirect
-      },
     ];
   },
 
