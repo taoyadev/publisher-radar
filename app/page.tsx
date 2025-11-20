@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import {
   fetchHomePageStats,
   fetchTopPublishersByTraffic,
@@ -144,7 +145,9 @@ export default async function HomePage() {
             <p className="text-gray-600 text-center mb-6">
               Search by Publisher ID (pub-xxx), domain, or publisher name
             </p>
-            <SearchInterface />
+            <Suspense fallback={<div className="text-center py-8">Loading search...</div>}>
+              <SearchInterface />
+            </Suspense>
           </div>
         </div>
 
