@@ -304,12 +304,6 @@ export default async function DomainPage({ params }: PageProps) {
                       </div>
                     )}
                   </div>
-
-                  {publisher.is_confidential && (
-                    <span className="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                      Confidential
-                    </span>
-                  )}
                 </Link>
               );
             })}
