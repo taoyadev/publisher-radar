@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: 'AdSense Publisher ID Reverse Lookup Tool | Free Search',
     description: 'Search any AdSense Publisher ID (pub-xxx) to find domains, traffic stats, and verification status. Free instant access.',
     type: 'website',
-    url: 'https://publisherradar.com/AdSense-reverse-lookup',
+    url: 'https://publisherradar.com/adsense-reverse-lookup',
   },
   twitter: {
     card: 'summary_large_image',
