@@ -10,11 +10,11 @@ export async function GET(
     const { domain: rawDomain } = await context.params;
     const domain = decodeURIComponent(rawDomain);
 
-    // Join seller_domains with sellers to get all seller details for a domain
+    // Join all_domains with sellers to get all seller details for a domain
     const sqlQuery = `
       SELECT DISTINCT s.*
       FROM seller_adsense.sellers s
-      INNER JOIN seller_adsense.seller_domains sd ON s.seller_id = sd.seller_id
+      INNER JOIN seller_adsense.all_domains sd ON s.seller_id = sd.seller_id
       WHERE sd.domain = $1
       ORDER BY s.updated_at DESC
     `;

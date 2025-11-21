@@ -61,7 +61,17 @@ await query('SELECT * FROM seller_adsense.sellers WHERE seller_id = $1', [id]);
    - Tracks `detection_source` and `confidence_score`
    - 146,779+ associations, 142,431+ unique domains
 
-3. **daily_snapshots** - Historical tracking
+3. **all_domains (VIEW)** - 聚合视图，合并多数据源（推荐使用）
+   - 合并 `seller_domains` (sellers.json) + `dnslytics.domains` (Host.io)
+   - sellers.json 数据优先（source_priority=1）
+   - Host.io 数据作为补充（source_priority=2, confidence=0.7）
+   - 按 (seller_id, domain) 自动去重
+   ```sql
+   -- 推荐查询方式
+   SELECT * FROM seller_adsense.all_domains WHERE seller_id = 'pub-xxx';
+   ```
+
+4. **daily_snapshots** - Historical tracking
    - Daily statistics: `total_count`, `new_count`, `removed_count`
    - Unique constraint on `snapshot_date`
 

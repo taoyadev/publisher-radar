@@ -28,7 +28,7 @@ export async function GET() {
 
     const domainsQuery = `
       SELECT COUNT(DISTINCT domain) as unique_domains
-      FROM seller_adsense.seller_domains;
+      FROM seller_adsense.all_domains;
     `;
 
     const [statsResult, domainsResult] = await Promise.all([

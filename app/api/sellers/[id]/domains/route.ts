@@ -14,7 +14,7 @@ export async function GET(
         NULL::bigint as search_traffic_monthly,
         NULL::bigint as total_traffic_monthly,
         NULL as traffic_data_source
-       FROM seller_adsense.seller_domains sd
+       FROM seller_adsense.all_domains sd
        WHERE sd.seller_id = $1
        ORDER BY
          sd.confidence_score DESC,

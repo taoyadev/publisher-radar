@@ -80,15 +80,15 @@ export async function fetchPublisherDetail(
             )
             ORDER BY
               sd.confidence_score DESC
-          ) FILTER (WHERE sd.id IS NOT NULL),
+          ) FILTER (WHERE sd.domain IS NOT NULL),
           '[]'
         ) as domains,
-        COUNT(sd.id) as domain_count,
+        COUNT(sd.domain) as domain_count,
         COUNT(DISTINCT sd.domain) as unique_domain_count,
         NULL as max_traffic,
         NULL as total_traffic
       FROM publisher_data p
-      LEFT JOIN seller_adsense.seller_domains sd ON p.seller_id = sd.seller_id
+      LEFT JOIN seller_adsense.all_domains sd ON p.seller_id = sd.seller_id
     )
     SELECT
       p.*,
@@ -150,7 +150,7 @@ export async function fetchPublishersByIds(
       s.domain as primary_domain,
       s.first_seen_date,
       COALESCE(
-        (SELECT COUNT(*) FROM seller_adsense.seller_domains sd WHERE sd.seller_id = s.seller_id),
+        (SELECT COUNT(*) FROM seller_adsense.all_domains sd WHERE sd.seller_id = s.seller_id),
         0
       ) as domain_count,
       NULL::bigint as max_traffic
@@ -276,12 +276,12 @@ export async function fetchRelatedPublishers(
     `
     WITH publisher_domains AS (
       SELECT domain
-      FROM seller_adsense.seller_domains
+      FROM seller_adsense.all_domains
       WHERE seller_id = $1
     ),
     related_seller_ids AS (
       SELECT DISTINCT sd.seller_id
-      FROM seller_adsense.seller_domains sd
+      FROM seller_adsense.all_domains sd
       INNER JOIN publisher_domains pd ON sd.domain = pd.domain
       WHERE sd.seller_id != $1
       LIMIT 20
@@ -413,7 +413,7 @@ export async function fetchPublishersByTld(
       `
       SELECT DISTINCT plv.*
       FROM seller_adsense.publisher_list_view plv
-      INNER JOIN seller_adsense.seller_domains sd ON plv.seller_id = sd.seller_id
+      INNER JOIN seller_adsense.all_domains sd ON plv.seller_id = sd.seller_id
       WHERE LOWER(SUBSTRING(sd.domain FROM '\.([^.]+)$')) = $1
       ORDER BY plv.max_traffic DESC NULLS LAST
       LIMIT $2 OFFSET $3;
@@ -424,7 +424,7 @@ export async function fetchPublishersByTld(
       `
       SELECT COUNT(DISTINCT plv.seller_id) as count
       FROM seller_adsense.publisher_list_view plv
-      INNER JOIN seller_adsense.seller_domains sd ON plv.seller_id = sd.seller_id
+      INNER JOIN seller_adsense.all_domains sd ON plv.seller_id = sd.seller_id
       WHERE LOWER(SUBSTRING(sd.domain FROM '\.([^.]+)$')) = $1;
       `,
       [tld.toLowerCase()]
@@ -459,7 +459,7 @@ export async function fetchHomePageStats(): Promise<HomePageStats> {
     SELECT
       (SELECT COUNT(*) FROM seller_adsense.sellers) as total_publishers,
       (SELECT COUNT(*) FROM seller_adsense.domain_aggregation_view) as total_domains,
-      (SELECT COUNT(*) FROM seller_adsense.seller_domains WHERE confidence_score = 1.0) as total_verified_domains,
+      (SELECT COUNT(*) FROM seller_adsense.all_domains WHERE confidence_score = 1.0) as total_verified_domains,
       (SELECT COUNT(*) FROM seller_adsense.publisher_list_view WHERE max_traffic IS NOT NULL) as publishers_with_traffic,
       (SELECT COALESCE(SUM(max_traffic), 0) FROM seller_adsense.publisher_list_view) as total_traffic,
       (SELECT ROUND(AVG(domain_count), 2) FROM seller_adsense.publisher_list_view) as avg_domains_per_publisher,
@@ -531,7 +531,7 @@ export async function fetchSimilarDomains(
     `
     WITH current_domain_publishers AS (
       SELECT seller_id
-      FROM seller_adsense.seller_domains
+      FROM seller_adsense.all_domains
       WHERE domain = $1
     ),
     similar_domains AS (
@@ -539,7 +539,7 @@ export async function fetchSimilarDomains(
         sd.domain,
         COUNT(DISTINCT sd.seller_id) as shared_publishers,
         COUNT(DISTINCT CASE WHEN cdp.seller_id IS NOT NULL THEN sd.seller_id END) as overlap_count
-      FROM seller_adsense.seller_domains sd
+      FROM seller_adsense.all_domains sd
       LEFT JOIN current_domain_publishers cdp ON sd.seller_id = cdp.seller_id
       WHERE sd.domain != $1
         AND sd.domain IS NOT NULL

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         COUNT(DISTINCT seller_id) as seller_count,
         MIN(first_detected) as first_detected,
         ROUND(AVG(confidence_score)::numeric, 2) as avg_confidence
-      FROM seller_adsense.seller_domains
+      FROM seller_adsense.all_domains
       WHERE domain ~ ('\\.' || $1 || '$')
       GROUP BY domain
       ORDER BY seller_count DESC, domain ASC
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const countQuery = `
       SELECT COUNT(DISTINCT domain) as total
-      FROM seller_adsense.seller_domains
+      FROM seller_adsense.all_domains
       WHERE domain ~ ('\\.' || $1 || '$')
     `;
     const countResult = await query(countQuery, [tld]);

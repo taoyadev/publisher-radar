@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         domain,
         COUNT(*) as seller_count,
         MIN(first_detected) as first_detected
-      FROM seller_adsense.seller_domains
+      FROM seller_adsense.all_domains
       ${searchQuery ? 'WHERE domain ILIKE $1' : ''}
       GROUP BY domain
       ORDER BY seller_count DESC, domain ASC

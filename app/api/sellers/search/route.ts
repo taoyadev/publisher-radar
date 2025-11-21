@@ -31,23 +31,39 @@ export async function GET(request: NextRequest) {
     const values: any[] = [];
     let paramCount = 1;
 
+    // Enhanced query logic: search both sellers.domain and all_domains view
     if (params.query) {
-      conditions.push(`(seller_id ILIKE $${paramCount} OR domain ILIKE $${paramCount})`);
+      // Search in seller_id OR sellers.domain OR all_domains
+      conditions.push(`(
+        s.seller_id ILIKE $${paramCount}
+        OR s.domain ILIKE $${paramCount}
+        OR s.seller_id IN (
+          SELECT seller_id FROM seller_adsense.all_domains WHERE domain ILIKE $${paramCount}
+        )
+      )`);
       values.push(`%${params.query}%`);
       paramCount++;
     }
 
     if (params.seller_type) {
-      conditions.push(`seller_type = $${paramCount}`);
+      conditions.push(`s.seller_type = $${paramCount}`);
       values.push(params.seller_type);
       paramCount++;
     }
 
     if (params.has_domain !== undefined) {
       if (params.has_domain === 'true') {
-        conditions.push('domain IS NOT NULL');
+        // Has domain in either sellers.domain OR all_domains
+        conditions.push(`(
+          s.domain IS NOT NULL
+          OR s.seller_id IN (SELECT seller_id FROM seller_adsense.all_domains)
+        )`);
       } else {
-        conditions.push('domain IS NULL');
+        // No domain in both tables
+        conditions.push(`(
+          s.domain IS NULL
+          AND s.seller_id NOT IN (SELECT seller_id FROM seller_adsense.all_domains)
+        )`);
       }
     }
 
@@ -57,11 +73,11 @@ export async function GET(request: NextRequest) {
     const offset = (params.page! - 1) * params.limit!;
     const combinedQuery = `
       SELECT
-        *,
+        s.*,
         COUNT(*) OVER() as total_count
-      FROM seller_adsense.sellers
+      FROM seller_adsense.sellers s
       ${whereClause}
-      ORDER BY ${params.sort_by} ${params.sort_order === 'asc' ? 'ASC' : 'DESC'}
+      ORDER BY s.${params.sort_by} ${params.sort_order === 'asc' ? 'ASC' : 'DESC'}
       LIMIT $${paramCount} OFFSET $${paramCount + 1}
     `;
 
