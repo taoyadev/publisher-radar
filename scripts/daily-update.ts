@@ -81,6 +81,9 @@ async function insertNewSellers(sellers: SellersJsonSeller[]): Promise<number> {
   const domains = sellers.map(s => s.domain || null);
   const names = sellers.map(s => s.name || null);
 
+  // Create array of timestamps for first_seen_date
+  const firstSeenDates = sellers.map(() => new Date());
+
   const query = `
     INSERT INTO seller_adsense.sellers
     (seller_id, seller_type, is_confidential, domain, name, first_seen_date)
@@ -90,7 +93,7 @@ async function insertNewSellers(sellers: SellersJsonSeller[]): Promise<number> {
       $3::boolean[],
       $4::text[],
       $5::text[],
-      array_fill(NOW()::timestamp, ARRAY[$6])
+      $6::timestamp[]
     )
     ON CONFLICT (seller_id) DO NOTHING
   `;
@@ -101,7 +104,7 @@ async function insertNewSellers(sellers: SellersJsonSeller[]): Promise<number> {
     isConfidentials,
     domains,
     names,
-    sellers.length
+    firstSeenDates
   ]);
   return result.rowCount || 0;
 }
@@ -284,16 +287,24 @@ async function main() {
     console.log(`  Removed sellers: ${removedSellerIds.length}`);
     console.log(`  Updated sellers: ${updatedSellers.length}`);
 
-    // Refresh materialized views
+    // Refresh materialized views (using direct queries instead of database function to avoid timeout)
     console.log('\nRefreshing materialized views...');
-    try {
-      const refreshResult = await pool.query('SELECT * FROM seller_adsense.refresh_all_materialized_views()');
-      console.log('Materialized views refreshed:');
-      refreshResult.rows.forEach(row => {
-        console.log(`  ${row.view_name}: ${row.status} (${row.duration_ms}ms)`);
-      });
-    } catch (refreshError) {
-      console.error('Error refreshing materialized views (continuing anyway):', refreshError);
+    const viewsToRefresh = [
+      'all_domains_mv',
+      'domain_aggregation_view',
+      'tld_aggregation_view',
+      // Skip publisher_list_view as it's too large and may timeout (113万+ rows)
+    ];
+
+    for (const viewName of viewsToRefresh) {
+      try {
+        const start = Date.now();
+        await pool.query(`REFRESH MATERIALIZED VIEW CONCURRENTLY seller_adsense.${viewName}`);
+        const duration = Date.now() - start;
+        console.log(`  ✅ ${viewName} (${duration}ms)`);
+      } catch (err: any) {
+        console.error(`  ❌ ${viewName}: ${err.message} (continuing anyway)`);
+      }
     }
 
     // Trigger On-Demand Revalidation (if in production with website running)

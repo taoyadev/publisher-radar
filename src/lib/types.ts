@@ -28,7 +28,7 @@ export interface SellerDomain {
   seller_id: string;
   domain: string;
   first_detected: string;
-  detection_source: 'sellers_json' | 'google_cse' | 'bing' | 'manual';
+  detection_source: 'sellers_json' | 'google_cse' | 'bing' | 'manual' | 'adsense_api' | 'both';
   confidence_score: number;
   created_at: string;
   search_traffic_monthly?: number;

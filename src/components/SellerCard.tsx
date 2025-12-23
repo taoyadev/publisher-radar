@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import Link from 'next/link';
 import { Seller } from '@/lib/types';
 
 interface Props {
@@ -20,12 +21,12 @@ function SellerCard({ seller }: Props) {
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
-          <a
-            href={`/sellers/${seller.seller_id}`}
+          <Link
+            href={`/publisher/${seller.seller_id}`}
             className="text-lg font-semibold text-blue-600 hover:underline break-all"
           >
             {seller.seller_id}
-          </a>
+          </Link>
           {seller.name && (
             <p className="text-sm text-gray-600 mt-1">{seller.name}</p>
           )}

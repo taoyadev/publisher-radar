@@ -36,7 +36,8 @@ export default function SearchInterface() {
     if (newPage > 1) params.set('page', newPage.toString());
 
     const queryString = params.toString();
-    router.push(queryString ? `?${queryString}` : '/');
+    // Replace instead of push to avoid polluting browser history while typing.
+    router.replace(queryString ? `?${queryString}` : '/');
   }, [debouncedQuery, sellerType, hasDomain, router]);
 
   const searchSellers = useCallback(async (pageNum: number = 1) => {
@@ -78,10 +79,7 @@ export default function SearchInterface() {
     if (debouncedQuery || sellerType !== 'all' || hasDomain !== 'all') {
       searchSellers(1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // searchSellers is intentionally excluded to prevent unnecessary re-renders
-    // We only want to trigger search when the actual search criteria change
-  }, [debouncedQuery, sellerType, hasDomain]);
+  }, [debouncedQuery, sellerType, hasDomain, searchSellers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

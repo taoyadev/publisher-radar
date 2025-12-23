@@ -35,3 +35,11 @@ Thumbs.db
 # Temporary files
 *.tmp
 temp/
+
+# Notion API Token files - NEVER COMMIT
+.env.production
+scripts/archive/
+scripts/migrations/archive/
+scripts/push-test-batch.ts
+scripts/find-database.ts
+scripts/find-database.ts

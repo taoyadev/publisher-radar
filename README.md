@@ -1,16 +1,20 @@
 # Google AdSense Sellers.json Explorer
 
-A comprehensive web application for exploring and searching Google's sellers.json data containing over 1 million publishers.
+A production-ready web app for exploring and searching Google's sellers.json data (1M+ publishers), with pSEO-friendly directory pages.
 
 ## 🎯 Features
 
 - **🔍 Advanced Search**: Search by seller ID or domain with real-time filtering
-- **📊 Statistics Dashboard**: View total sellers, publishers, and domain counts
+- **📊 Publisher Profiles**: Rich publisher pages with domains and verification signals
+- **🌐 Domain & TLD Directories**: Browse by domain and top-level domain (TLD)
+- **📈 Discover**: Track latest observed domain updates
+- **📊 Statistics Dashboard**: View total publishers and domain counts
 - **🎯 Filtering**: Filter by seller type (PUBLISHER/BOTH) and domain status
 - **📱 Responsive Design**: Mobile-friendly interface built with Tailwind CSS
-- **⚡ Fast API**: 7 RESTful endpoints with pagination support
+- **⚡ Fast API**: Rate-limited REST endpoints with pagination support
 - **🗄️ PostgreSQL Database**: 1,026,101 sellers imported from official sellers.json
 - **🔄 Daily Monitoring**: Automated daily updates with diff detection and historical tracking
+- **🧭 SEO**: Metadata, canonical URLs, `robots.txt`, `sitemap.xml`, JSON-LD, OpenGraph/Twitter images
 
 ## 📦 Project Structure
 
@@ -19,30 +23,35 @@ seller-json/
 ├── app/
 │   ├── api/
 │   │   ├── sellers/search/route.ts       # Search sellers endpoint
-│   │   ├── sellers/[id]/route.ts         # Get single seller
+│   │   ├── sellers/[id]/route.ts         # Get single seller (pub-xxxxxxxxxxxxxxxx)
+│   │   ├── sellers/[id]/domains/route.ts # Domains for a seller
 │   │   ├── domains/search/route.ts       # Search domains
+│   │   ├── domains/by-tld/route.ts       # Top domains by TLD
+│   │   ├── domains/[domain]/sellers/route.ts # Sellers for a domain
 │   │   ├── snapshots/route.ts            # Daily snapshots endpoint
 │   │   └── stats/route.ts                # Statistics endpoint
 │   ├── page.tsx                          # Home page
+│   ├── publishers/page.tsx               # Top publishers directory
+│   ├── publishers/search/page.tsx        # Publisher name search (noindex)
+│   ├── publisher/[id]/page.tsx           # Publisher profile (pSEO)
+│   ├── domain/[domain]/page.tsx          # Domain profile (pSEO)
+│   ├── tld/page.tsx                      # TLD directory index
+│   ├── tld/[tld]/page.tsx                # TLD detail (pSEO)
+│   ├── discover/page.tsx                 # Latest domain updates
 │   ├── layout.tsx                        # Root layout
 │   └── globals.css                       # Global styles
 ├── src/
 │   ├── components/
 │   │   ├── SearchInterface.tsx           # Main search UI
-│   │   ├── StatsDisplay.tsx              # Statistics display
 │   │   └── SellerCard.tsx                # Seller card component
 │   └── lib/
-│       ├── supabase.ts                   # Supabase client
 │       ├── db.ts                         # PostgreSQL client
 │       └── types.ts                      # TypeScript types
 ├── scripts/
-│   ├── import-direct.py                  # Python import script
-│   ├── import-vps.js                     # Node.js import script
 │   ├── daily-update.ts                   # Daily monitoring script
-│   └── run-daily-update.sh               # Cron wrapper script
 ├── logs/                                 # Daily update logs
 ├── crontab.example                       # Cron configuration
-└── DAILY_MONITORING.md                   # Monitoring documentation
+└── ADSENSE_INTEGRATION.md                # Integration notes
 ```
 
 ## 🗄️ Database Schema
@@ -185,7 +194,7 @@ Query daily monitoring snapshots with historical tracking.
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript (strict mode)
 - **Database**: PostgreSQL (Supabase on VPS)
 - **Database Client**: pg (node-postgres)

@@ -3,10 +3,11 @@
  * Generate schema.org markup for SEO
  */
 
-import type { PublisherDetail, PublisherListItem, HomePageStats } from './types';
+import type { PublisherDetail, PublisherListItem } from './types';
+import { SITE_CONFIG } from '@/config/site';
 
-const SITE_URL = 'https://publisherradar.com';
-const SITE_NAME = 'Publisher Radar';
+const SITE_URL = SITE_CONFIG.url;
+const SITE_NAME = SITE_CONFIG.name;
 
 /**
  * Organization schema for homepage
@@ -17,8 +18,8 @@ export function getOrganizationSchema() {
     '@type': 'Organization',
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/logo.png`,
-    description: 'Search and analyze over 1 million Google AdSense publishers instantly. Free directory with real-time data from sellers.json.',
+    logo: `${SITE_URL}${SITE_CONFIG.logo}`,
+    description: SITE_CONFIG.description,
     sameAs: [
       // Add social media URLs if available
       // 'https://twitter.com/yourhandle',
@@ -36,7 +37,7 @@ export function getWebsiteSchema() {
     '@type': 'WebSite',
     name: SITE_NAME,
     url: SITE_URL,
-    description: 'Publisher Radar: 1M+ AdSense Publishers Search & Analytics',
+    description: SITE_CONFIG.description,
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -68,7 +69,7 @@ export function getBreadcrumbSchema(items: { name: string; url: string }[]) {
  * Publisher profile schema (Person/Organization)
  */
 export function getPublisherSchema(publisher: PublisherDetail) {
-  const schema: any = {
+  const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': publisher.seller_type === 'PUBLISHER' ? 'Organization' : 'Thing',
     identifier: publisher.seller_id,
@@ -173,6 +174,6 @@ export function getCollectionPageSchema(
  * Use in component:
  * <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: stringifyJSONLD(data) }} />
  */
-export function stringifyJSONLD(data: any): string {
+export function stringifyJSONLD(data: unknown): string {
   return JSON.stringify(data);
 }

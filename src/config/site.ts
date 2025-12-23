@@ -25,9 +25,10 @@ export const SITE_CONFIG = {
   github: 'https://github.com/publisherradar',
 
   // Branding
-  logo: '/logo.svg',
+  // Use existing static assets to avoid broken links in schema/metadata.
+  logo: '/icon-512.png',
   favicon: '/favicon.ico',
-  ogImage: '/og-home.png',
+  ogImage: '/opengraph-image',
 
   // Organization
   organization: {

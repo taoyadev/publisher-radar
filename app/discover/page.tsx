@@ -8,12 +8,13 @@ import {
 } from '@/lib/structured-data';
 import PublisherIdLink from '@/components/PublisherIdLink';
 import ExternalLink from '@/components/ExternalLink';
+import { SITE_CONFIG } from '@/config/site';
 
 // ============================================================================
 // SSG/ISR CONFIGURATION
 // ============================================================================
 
-export const revalidate = 0; // No cache - always fresh data
+export const revalidate = 60; // Keep fresh, but avoid uncached DB hits on every request
 
 // ============================================================================
 // METADATA
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
     title: 'Discover New Domains - Latest 100 AdSense Publishers',
     description: 'Discover the newest 100 domains added to AdSense Publisher Radar. Track recently verified publisher domains.',
     type: 'website',
-    url: 'https://publisherradar.com/discover',
+    url: `${SITE_CONFIG.url}/discover`,
   },
   twitter: {
     card: 'summary',
@@ -49,19 +50,32 @@ export default async function NewDomainsPage() {
     WITH domain_stats AS (
       SELECT
         sd.domain,
-        MIN(sd.first_detected) as first_seen,
-        COUNT(DISTINCT sd.seller_id) as seller_count,
-        MAX(sd.confidence_score) as max_confidence,
-        array_agg(DISTINCT sd.detection_source) as detection_sources,
-        NULL::bigint as max_traffic,
-        array_agg(DISTINCT sd.seller_id) as seller_ids
+        MIN(sd.first_detected) AS first_seen,
+        MAX(sd.created_at) AS last_updated,
+        COUNT(DISTINCT sd.seller_id) AS seller_count,
+        MAX(sd.confidence_score) AS max_confidence,
+        COALESCE(
+          array_agg(DISTINCT sd.detection_source) FILTER (WHERE sd.detection_source IS NOT NULL),
+          ARRAY[]::text[]
+        ) AS detection_sources,
+        array_agg(DISTINCT sd.seller_id ORDER BY sd.seller_id) AS seller_ids
       FROM seller_adsense.seller_domains sd
+      WHERE sd.domain IS NOT NULL
       GROUP BY sd.domain
     )
-    SELECT *
-    FROM domain_stats
-    WHERE domain IS NOT NULL
-    ORDER BY first_seen DESC, domain ASC
+    SELECT
+      ds.domain,
+      ds.seller_count,
+      ds.seller_ids,
+      dav.max_traffic,
+      dav.total_traffic,
+      ds.max_confidence,
+      ds.detection_sources,
+      ds.first_seen,
+      ds.last_updated
+    FROM domain_stats ds
+    LEFT JOIN seller_adsense.domain_aggregation_view dav ON dav.domain = ds.domain
+    ORDER BY ds.last_updated DESC, ds.domain ASC
     LIMIT 100
   `);
 
@@ -91,7 +105,11 @@ export default async function NewDomainsPage() {
     })),
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) {
+      return 'Unknown';
+    }
+
     const date = new Date(dateString);
     const now = new Date();
 
@@ -228,7 +246,7 @@ export default async function NewDomainsPage() {
                 <div className="text-right">
                   <div className="text-sm text-gray-500 mb-1">Added</div>
                   <div className="text-sm font-medium text-gray-900">
-                    {formatDate(domain.first_seen)}
+                    {formatDate(domain.last_updated || domain.first_seen)}
                   </div>
                 </div>
               </div>

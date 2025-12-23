@@ -147,12 +147,13 @@ export class AdSenseApiClient {
           statusCode: 200,
         };
 
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const normalizedError = error instanceof Error ? error : new Error(String(error));
         // Handle network errors with retry
         if (attempt < MAX_RETRIES && (
-          error.name === 'AbortError' ||
-          error.name === 'TimeoutError' ||
-          error.message?.includes('fetch')
+          normalizedError.name === 'AbortError' ||
+          normalizedError.name === 'TimeoutError' ||
+          normalizedError.message?.includes('fetch')
         )) {
           const delay = backoff.getDelay();
           console.warn(`Network error for ${pubId}, retrying in ${delay}ms...`);
@@ -166,7 +167,7 @@ export class AdSenseApiClient {
           success: false,
           pubId,
           domains: [],
-          error: error.message || 'Unknown error',
+          error: normalizedError.message || 'Unknown error',
           statusCode: 0,
         };
       }

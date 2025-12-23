@@ -3,16 +3,16 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
   fetchPublisherDetail,
-  fetchTopPublisherIds,
   fetchRelatedPublishers,
 } from '@/lib/ssg-queries';
-import { getRevalidateTime, getPublisherTier } from '@/lib/cache-helpers';
+import { SITE_CONFIG } from '@/config/site';
 import {
   getPublisherSchema,
   getBreadcrumbSchema,
   stringifyJSONLD,
 } from '@/lib/structured-data';
 import DomainCard from '@/components/DomainCard';
+import type { SellerDomain } from '@/lib/types';
 
 // ============================================================================
 // SSG/ISR CONFIGURATION
@@ -92,21 +92,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title,
       description,
       type: 'profile',
-      url: `https://publisherradar.com/publisher/${id}`,
-      images: [
-        {
-          url: '/og-publisher.png',
-          width: 1200,
-          height: 630,
-          alt: `${publisher.name || id} - AdSense Publisher Profile`,
-        },
-      ],
+      url: `${SITE_CONFIG.url}/publisher/${id}`,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/og-publisher.png'],
     },
     alternates: {
       canonical: `/publisher/${id}`,
@@ -314,7 +305,7 @@ export default async function PublisherPage({ params }: PageProps) {
                   seller_id: id,
                   domain: domain.domain,
                   first_detected: domain.first_detected,
-                  detection_source: domain.detection_source as any,
+                  detection_source: (domain.detection_source ?? 'manual') as SellerDomain['detection_source'],
                   confidence_score: domain.confidence_score,
                   created_at: new Date().toISOString(),
                   search_traffic_monthly: domain.search_traffic_monthly ?? undefined,

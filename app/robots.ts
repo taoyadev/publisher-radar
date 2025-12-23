@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { SITE_CONFIG } from '@/config/site';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://publisherradar.com';
+  const baseUrl = SITE_CONFIG.url;
 
   return {
     rules: [

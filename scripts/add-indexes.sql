@@ -36,6 +36,11 @@ CREATE INDEX IF NOT EXISTS idx_sellers_domain_trgm
 ON seller_adsense.sellers USING gin(domain gin_trgm_ops)
 WHERE domain IS NOT NULL;
 
+-- GIN index for fuzzy domain search on seller_domains (ILIKE queries)
+CREATE INDEX IF NOT EXISTS idx_seller_domains_domain_trgm
+ON seller_adsense.seller_domains USING gin(domain gin_trgm_ops)
+WHERE domain IS NOT NULL;
+
 -- Analyze table to update statistics
 ANALYZE seller_adsense.sellers;
 

@@ -3,22 +3,19 @@ import './globals.css';
 import { getOrganizationSchema, getWebsiteSchema } from '@/lib/structured-data';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { SEO_CONFIG, SITE_CONFIG } from '@/config/site';
+import { getMetadataBase } from '@/lib/url';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Publisher Radar: 1M+ AdSense Publishers Search & Analytics',
-    template: '%s | Publisher Radar',
+    default: SEO_CONFIG.defaultTitle,
+    template: SEO_CONFIG.titleTemplate,
   },
-  description: 'Search and analyze over 1 million Google AdSense publishers instantly. Free directory with real-time data from sellers.json. Find publisher domains, track changes, and discover opportunities.',
-  keywords: 'adsense publishers, sellers.json, publisher directory, adsense analytics, publisher search, programmatic advertising',
-  authors: [{ name: 'Publisher Radar' }],
-  creator: 'Publisher Radar',
-  ...(process.env.NEXT_PUBLIC_APP_URL && {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL)
-  }),
-  alternates: {
-    canonical: '/',
-  },
+  description: SEO_CONFIG.defaultDescription,
+  keywords: SEO_CONFIG.defaultKeywords,
+  authors: [{ name: SITE_CONFIG.name }],
+  creator: SITE_CONFIG.name,
+  metadataBase: getMetadataBase(),
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '32x32' },
@@ -28,12 +25,14 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    siteName: 'Publisher Radar',
+    ...SEO_CONFIG.openGraph,
+    siteName: SITE_CONFIG.name,
+    url: SITE_CONFIG.url,
   },
   twitter: {
-    card: 'summary_large_image',
+    card: SEO_CONFIG.twitter.cardType,
+    site: SEO_CONFIG.twitter.site,
+    creator: SEO_CONFIG.twitter.handle,
   },
   robots: {
     index: true,

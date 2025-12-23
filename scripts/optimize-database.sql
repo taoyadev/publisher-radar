@@ -34,6 +34,12 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_domains_domain
 ON seller_adsense.seller_domains(domain)
 WHERE domain IS NOT NULL;
 
+-- Trigram index for fuzzy domain searches (ILIKE) used by API
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_domains_domain_trgm
+ON seller_adsense.seller_domains USING gin (domain gin_trgm_ops)
+WHERE domain IS NOT NULL;
+
 -- Composite index for domain + detection source
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seller_domains_domain_source
 ON seller_adsense.seller_domains(domain, detection_source, confidence_score DESC);

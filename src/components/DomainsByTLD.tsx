@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface DomainData {
   domain: string;
@@ -37,11 +37,7 @@ export default function DomainsByTLD() {
     { value: 'it', label: '.it', color: 'bg-indigo-100 text-indigo-800' }
   ];
 
-  useEffect(() => {
-    fetchDomains();
-  }, [selectedTLD, page]);
-
-  const fetchDomains = async () => {
+  const fetchDomains = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(
@@ -55,7 +51,11 @@ export default function DomainsByTLD() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedTLD, page]);
+
+  useEffect(() => {
+    fetchDomains();
+  }, [fetchDomains]);
 
   const handleTLDChange = (tld: string) => {
     setSelectedTLD(tld);

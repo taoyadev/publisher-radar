@@ -1,7 +1,9 @@
+/* eslint-disable react/no-unescaped-entities */
 import { Metadata } from 'next';
 import { stringifyJSONLD, getFAQSchema } from '@/lib/structured-data';
 import ReverseLookupInterface from '@/components/ReverseLookupInterface';
 import Link from 'next/link';
+import { SITE_CONFIG } from '@/config/site';
 
 // ============================================================================
 // METADATA
@@ -15,12 +17,15 @@ export const metadata: Metadata = {
     title: 'AdSense Publisher ID Reverse Lookup Tool | Free Search',
     description: 'Search any AdSense Publisher ID (pub-xxx) to find domains, traffic stats, and verification status. Free instant access.',
     type: 'website',
-    url: 'https://publisherradar.com/adsense-reverse-lookup',
+    url: `${SITE_CONFIG.url}/adsense-reverse-lookup`,
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AdSense Publisher ID Reverse Lookup',
     description: 'Free tool to search and verify AdSense Publisher IDs',
+  },
+  alternates: {
+    canonical: '/adsense-reverse-lookup',
   },
 };
 

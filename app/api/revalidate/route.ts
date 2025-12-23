@@ -1,5 +1,8 @@
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/api-rate-limit';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * On-Demand Revalidation API
@@ -15,6 +18,9 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 export async function POST(request: NextRequest) {
+  const rateLimitResult = await rateLimit(request, 'heavy');
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const body = await request.json();
     const { secret, type, ids } = body;
@@ -100,10 +106,11 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-  } catch (error: any) {
-    console.error('[Revalidate] Error:', error);
+  } catch (error: unknown) {
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    console.error('[Revalidate] Error:', normalizedError);
     return NextResponse.json(
-      { error: error.message || 'Revalidation failed' },
+      { error: normalizedError.message || 'Revalidation failed' },
       { status: 500 }
     );
   }

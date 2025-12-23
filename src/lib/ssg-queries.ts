@@ -7,10 +7,47 @@
  * - Minimize JOIN operations
  * - Return typed results
  * - Support pagination
- * - Be cache-friendly
+ * - Be cache-friendly with in-memory caching
  */
 
 import { query } from './db';
+
+// ============================================================================
+// SIMPLE IN-MEMORY CACHE
+// ============================================================================
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry<unknown>>();
+const DEFAULT_CACHE_TTL = 60000; // 1 minute default
+
+function getCached<T>(key: string, ttl: number = DEFAULT_CACHE_TTL): T | null {
+  const entry = cache.get(key) as CacheEntry<T> | undefined;
+  if (entry && Date.now() - entry.timestamp < ttl) {
+    return entry.data;
+  }
+  return null;
+}
+
+function setCache<T>(key: string, data: T): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
+
+// Clean up old cache entries periodically
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    const maxAge = 300000; // 5 minutes max age
+    for (const [key, entry] of cache.entries()) {
+      if (now - entry.timestamp > maxAge) {
+        cache.delete(key);
+      }
+    }
+  }, 60000); // Run cleanup every minute
+}
 import type {
   PublisherListItem,
   PublisherDetail,
@@ -228,9 +265,13 @@ export async function fetchPublisherList(
 }
 
 /**
- * Fetch recently added publishers (for homepage)
+ * Fetch recently added publishers (for homepage, cached for 2 minutes)
  */
 export async function fetchRecentPublishers(limit: number = 20): Promise<PublisherListItem[]> {
+  const cacheKey = `recent_publishers_${limit}`;
+  const cached = getCached<PublisherListItem[]>(cacheKey, 120000); // 2 min cache
+  if (cached) return cached;
+
   const result = await query<PublisherListItem>(
     `
     SELECT *
@@ -242,15 +283,20 @@ export async function fetchRecentPublishers(limit: number = 20): Promise<Publish
     [limit]
   );
 
+  setCache(cacheKey, result.rows);
   return result.rows;
 }
 
 /**
- * Fetch top publishers by traffic (for homepage)
+ * Fetch top publishers by traffic (for homepage, cached for 2 minutes)
  */
 export async function fetchTopPublishersByTraffic(
   limit: number = 10
 ): Promise<PublisherListItem[]> {
+  const cacheKey = `top_publishers_traffic_${limit}`;
+  const cached = getCached<PublisherListItem[]>(cacheKey, 120000); // 2 min cache
+  if (cached) return cached;
+
   const result = await query<PublisherListItem>(
     `
     SELECT *
@@ -262,39 +308,54 @@ export async function fetchTopPublishersByTraffic(
     [limit]
   );
 
+  setCache(cacheKey, result.rows);
   return result.rows;
 }
 
 /**
  * Find related publishers (by shared domains)
+ * Optimized with caching and efficient query structure
  */
 export async function fetchRelatedPublishers(
   sellerId: string,
   limit: number = 5
 ): Promise<PublisherListItem[]> {
+  // Add caching to reduce database load
+  const cacheKey = `related_publishers_${sellerId}_${limit}`;
+  const cached = getCached<PublisherListItem[]>(cacheKey, 120000); // 2 min cache
+  if (cached) return cached;
+
+  // Optimized query: use INNER JOIN instead of WHERE IN subquery
+  // and limit domain scan to prevent excessive data processing
   const result = await query<PublisherListItem>(
     `
     WITH publisher_domains AS (
       SELECT domain
       FROM seller_adsense.all_domains
       WHERE seller_id = $1
+      LIMIT 100  -- Prevent excessive domain scans for publishers with many domains
     ),
     related_seller_ids AS (
-      SELECT DISTINCT sd.seller_id
+      SELECT sd.seller_id, COUNT(*) as shared_domain_count
       FROM seller_adsense.all_domains sd
-      INNER JOIN publisher_domains pd ON sd.domain = pd.domain
       WHERE sd.seller_id != $1
+        AND EXISTS (
+          SELECT 1 FROM publisher_domains pd WHERE pd.domain = sd.domain
+        )
+      GROUP BY sd.seller_id
+      ORDER BY shared_domain_count DESC
       LIMIT 20
     )
-    SELECT *
-    FROM seller_adsense.publisher_list_view
-    WHERE seller_id IN (SELECT seller_id FROM related_seller_ids)
-    ORDER BY max_traffic DESC NULLS LAST
+    SELECT plv.*
+    FROM seller_adsense.publisher_list_view plv
+    INNER JOIN related_seller_ids rsi ON plv.seller_id = rsi.seller_id
+    ORDER BY plv.max_traffic DESC NULLS LAST
     LIMIT $2;
     `,
     [sellerId, limit]
   );
 
+  setCache(cacheKey, result.rows);
   return result.rows;
 }
 
@@ -306,7 +367,7 @@ export async function fetchRelatedPublishers(
  * Fetch domain details (for /domain/[domain] page)
  */
 export async function fetchDomainDetail(domain: string): Promise<DomainAggregation | null> {
-  const result = await query<DomainAggregation>(
+  const viewResult = await query<DomainAggregation>(
     `
     SELECT *
     FROM seller_adsense.domain_aggregation_view
@@ -315,11 +376,39 @@ export async function fetchDomainDetail(domain: string): Promise<DomainAggregati
     [domain]
   );
 
-  if (result.rows.length === 0) {
+  if (viewResult.rows.length > 0) {
+    return viewResult.rows[0];
+  }
+
+  // Fall back to an on-demand aggregation when the materialized view is stale
+  const fallbackResult = await query<DomainAggregation>(
+    `
+    SELECT
+      ad.domain,
+      COUNT(DISTINCT ad.seller_id) as seller_count,
+      array_agg(DISTINCT ad.seller_id ORDER BY ad.seller_id) as seller_ids,
+      NULL::bigint as max_traffic,
+      NULL::bigint as total_traffic,
+      MAX(ad.confidence_score) as max_confidence,
+      array_agg(DISTINCT ad.detection_source) as detection_sources,
+      MIN(ad.first_detected) as first_seen,
+      MAX(ad.created_at) as last_updated
+    FROM seller_adsense.all_domains ad
+    WHERE ad.domain = $1
+    GROUP BY ad.domain;
+    `,
+    [domain]
+  );
+
+  if (fallbackResult.rows.length === 0) {
     return null;
   }
 
-  return result.rows[0];
+  console.warn(
+    `[Domain Detail] Materialized view miss for domain "${domain}" – using live aggregation`
+  );
+
+  return fallbackResult.rows[0];
 }
 
 /**
@@ -342,9 +431,13 @@ export async function fetchTopDomains(limit: number = 5000): Promise<string[]> {
 }
 
 /**
- * Fetch top domains with full details (for homepage)
+ * Fetch top domains with full details (for homepage, cached for 2 minutes)
  */
 export async function fetchTopDomainDetails(limit: number = 10): Promise<DomainAggregation[]> {
+  const cacheKey = `top_domains_${limit}`;
+  const cached = getCached<DomainAggregation[]>(cacheKey, 120000); // 2 min cache
+  if (cached) return cached;
+
   const result = await query<DomainAggregation>(
     `
     SELECT *
@@ -356,6 +449,7 @@ export async function fetchTopDomainDetails(limit: number = 10): Promise<DomainA
     [limit]
   );
 
+  setCache(cacheKey, result.rows);
   return result.rows;
 }
 
@@ -442,9 +536,13 @@ export async function fetchPublishersByTld(
 // ============================================================================
 
 /**
- * Fetch homepage statistics
+ * Fetch homepage statistics (cached for 5 minutes)
  */
 export async function fetchHomePageStats(): Promise<HomePageStats> {
+  const cacheKey = 'homepage_stats';
+  const cached = getCached<HomePageStats>(cacheKey, 300000); // 5 min cache
+  if (cached) return cached;
+
   const result = await query<{
     total_publishers: string;
     total_domains: string;
@@ -470,7 +568,7 @@ export async function fetchHomePageStats(): Promise<HomePageStats> {
 
   const row = result.rows[0];
 
-  return {
+  const stats: HomePageStats = {
     total_publishers: parseInt(row.total_publishers),
     total_domains: parseInt(row.total_domains),
     total_verified_domains: parseInt(row.total_verified_domains),
@@ -482,6 +580,9 @@ export async function fetchHomePageStats(): Promise<HomePageStats> {
       new_last_30_days: parseInt(row.new_last_30_days),
     },
   };
+
+  setCache(cacheKey, stats);
+  return stats;
 }
 
 /**
@@ -506,8 +607,12 @@ export async function publisherExists(sellerId: string): Promise<boolean> {
 export async function domainExists(domain: string): Promise<boolean> {
   const result = await query<{ exists: boolean }>(
     `
-    SELECT EXISTS(
-      SELECT 1 FROM seller_adsense.domain_aggregation_view WHERE domain = $1
+    SELECT (
+      EXISTS(
+        SELECT 1 FROM seller_adsense.domain_aggregation_view WHERE domain = $1
+      ) OR EXISTS(
+        SELECT 1 FROM seller_adsense.seller_domains WHERE domain = $1
+      )
     ) as exists;
     `,
     [domain]

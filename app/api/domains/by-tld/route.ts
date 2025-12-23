@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { rateLimit } from '@/lib/api-rate-limit';
 
 // Cache TLD queries for 15 minutes
 export const revalidate = 900;
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const rateLimitResult = await rateLimit(request, 'heavy');
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const tld = searchParams.get('tld') || 'com'; // Default to .com

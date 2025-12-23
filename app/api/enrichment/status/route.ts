@@ -1,25 +1,52 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
+interface CoverageStatsRow {
+  total_sellers: string;
+  sellers_with_domains: string;
+  from_sellers_json_only: string;
+  from_adsense_api_only: string;
+  from_both_sources: string;
+  total_verified_domains: string;
+}
+
+interface ProgressRow {
+  adsense_api_status: string | null;
+  count: string;
+  percentage: string;
+}
+
+interface ErrorRow {
+  adsense_api_error_message: string;
+  count: string;
+}
+
+interface ProcessingRateRow {
+  processed_last_hour: string;
+}
+
 export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export async function GET() {
   try {
+    // No request object here; use a very small cache + rely on CDN cache headers for protection.
+
     // 1. Get overall coverage statistics
-    const coverageResult = await query(`
+    const coverageResult = await query<CoverageStatsRow>(`
       SELECT * FROM seller_adsense.domain_coverage_stats
     `);
     const coverage = coverageResult.rows[0];
 
     // 2. Get AdSense API processing progress
-    const progressResult = await query(`
+    const progressResult = await query<ProgressRow>(`
       SELECT * FROM seller_adsense.adsense_api_progress
       ORDER BY count DESC
     `);
     const progress = progressResult.rows;
 
     // 3. Get recent errors
-    const errorsResult = await query(`
+    const errorsResult = await query<ErrorRow>(`
       SELECT
         adsense_api_error_message,
         COUNT(*) as count
@@ -33,7 +60,7 @@ export async function GET() {
     const topErrors = errorsResult.rows;
 
     // 4. Get processing rate (last hour)
-    const rateResult = await query(`
+    const rateResult = await query<ProcessingRateRow>(`
       SELECT
         COUNT(*) as processed_last_hour
       FROM seller_adsense.sellers
@@ -43,8 +70,10 @@ export async function GET() {
 
     // 5. Calculate estimates
     const totalSellers = parseInt(coverage.total_sellers);
-    const processedCount = progress.find(p => p.adsense_api_status === 'success')?.count || 0;
-    const pendingCount = progress.find(p => p.adsense_api_status === null || p.adsense_api_status === 'pending')?.count || 0;
+    const processedCount = parseInt(progress.find(p => p.adsense_api_status === 'success')?.count || '0');
+    const pendingCount = parseInt(
+      progress.find(p => p.adsense_api_status === null || p.adsense_api_status === 'pending')?.count || '0'
+    );
 
     const hourlyRate = parseInt(processingRate.processed_last_hour);
     const remainingHours = hourlyRate > 0 ? Math.ceil(pendingCount / hourlyRate) : null;
@@ -84,15 +113,18 @@ export async function GET() {
           message: e.adsense_api_error_message,
           count: parseInt(e.count),
         })),
-        totalErrors: progress.find(p => p.adsense_api_status === 'error')?.count || 0,
+        totalErrors: parseInt(progress.find(p => p.adsense_api_status === 'error')?.count || '0'),
       },
     };
 
-    return NextResponse.json(response);
-  } catch (error: any) {
-    console.error('Error fetching enrichment status:', error);
+    const res = NextResponse.json(response);
+    res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    return res;
+  } catch (error: unknown) {
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    console.error('Error fetching enrichment status:', normalizedError);
     return NextResponse.json(
-      { error: 'Failed to fetch enrichment status', details: error.message },
+      { error: 'Failed to fetch enrichment status', details: normalizedError.message },
       { status: 500 }
     );
   }

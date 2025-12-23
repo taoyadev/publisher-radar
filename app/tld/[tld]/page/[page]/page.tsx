@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { fetchPublishersByTld, fetchTldDetail } from '@/lib/ssg-queries';
 import { getTotalPages, validatePageNumber } from '@/lib/cache-helpers';
+import { SITE_CONFIG } from '@/config/site';
 
 // ============================================================================
 // SSG/ISR CONFIGURATION
@@ -51,7 +52,7 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      url: `https://publisherradar.com/tld/${tld}/page/${pageNum}`,
+      url: `${SITE_CONFIG.url}/tld/${tld}/page/${pageNum}`,
     },
     twitter: {
       card: 'summary',

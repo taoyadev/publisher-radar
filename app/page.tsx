@@ -7,8 +7,6 @@ import {
   fetchTopDomainDetails,
 } from '@/lib/ssg-queries';
 import {
-  getOrganizationSchema,
-  getWebsiteSchema,
   getPublisherListSchema,
   getFAQSchema,
   stringifyJSONLD,
@@ -20,6 +18,7 @@ import UseCases from '@/components/UseCases';
 import FAQ from '@/components/FAQ';
 import WhyPublisherRadar from '@/components/content/WhyPublisherRadar';
 import Link from 'next/link';
+import { SITE_CONFIG } from '@/config/site';
 
 // ============================================================================
 // SSR CONFIGURATION
@@ -39,21 +38,15 @@ export const metadata: Metadata = {
     title: 'AdSense Publisher Radar | 1M+ Publishers Directory',
     description: 'Search 1M+ verified Google AdSense publishers. Publisher ID reverse lookup, domain verification, traffic data.',
     type: 'website',
-    url: 'https://publisherradar.com',
-    images: [
-      {
-        url: '/og-home.png',
-        width: 1200,
-        height: 630,
-        alt: 'AdSense Publisher Radar',
-      },
-    ],
+    url: SITE_CONFIG.url,
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AdSense Publisher Radar | 1M+ Publishers',
     description: 'Free Publisher ID reverse lookup and domain verification',
-    images: ['/og-home.png'],
+  },
+  alternates: {
+    canonical: '/',
   },
 };
 
@@ -70,9 +63,6 @@ export default async function HomePage() {
     fetchTopDomainDetails(6),
   ]);
 
-  // Generate structured data
-  const organizationSchema = getOrganizationSchema();
-  const websiteSchema = getWebsiteSchema();
   const topPublishersListSchema = getPublisherListSchema(
     topPublishers,
     'Top AdSense Publishers by Traffic'
@@ -115,14 +105,6 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: stringifyJSONLD(organizationSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: stringifyJSONLD(websiteSchema) }}
-      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: stringifyJSONLD(topPublishersListSchema) }}

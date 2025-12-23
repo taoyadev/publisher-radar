@@ -54,7 +54,7 @@ export const domainSchema = z.string()
 // ============================================================================
 
 export const topPublishersParamsSchema = z.object({
-  sortBy: z.enum(['traffic', 'domains']).default('traffic'),
+  sortBy: z.enum(['traffic', 'domains', 'newest', 'seller_id']).default('traffic'),
   limit: z.coerce.number().int().positive().max(1000).default(100),
   minTraffic: z.coerce.number().int().nonnegative().default(0),
 });

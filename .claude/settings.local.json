@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wget:*)",
+      "Bash(curl:*)",
+      "mcp__ghelper-proxy__ghelper_fetch",
+      "mcp__ghelper-proxy__ghelper_list_proxies",
+      "mcp__ghelper-proxy__ghelper_select_proxy",
+      "mcp__web-fetch__get_raw_text",
+      "Bash(ssh vps-supabase \"cd /tmp && curl -o sellers.json https://storage.googleapis.com/adx-rtb-dictionaries/sellers.json && ls -lh sellers.json\")",
+      "Bash(scp:*)",
+      "Bash(cat:*)",
+      "mcp__web-fetch__get_markdown",
+      "mcp__firecrawl__firecrawl_scrape",
+      "Read(//Users/butterfly/.claude/newdev/**)",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(npm install)",
+      "Bash(ssh:*)",
+      "Read(//Users/butterfly/**)",
+      "Bash(npx tsx:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

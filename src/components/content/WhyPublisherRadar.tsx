@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import type { HomePageStats } from '@/lib/types';
 
 interface WhyPublisherRadarProps {

@@ -1,7 +1,9 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function PublisherSearchBox() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,7 +13,7 @@ export default function PublisherSearchBox() {
     e.preventDefault();
     if (searchTerm.trim()) {
       // Navigate to search results filtered by name
-      router.push(`/publishers?name=${encodeURIComponent(searchTerm.trim())}`);
+      router.push(`/publishers/search?name=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 
@@ -22,7 +24,7 @@ export default function PublisherSearchBox() {
       </h3>
       <p className="text-sm text-blue-700 mb-4">
         Looking for a specific publisher? Search by company name (e.g., "Google", "WordPress", "Medium").
-        To search by Publisher ID, use the <a href="/" className="underline hover:text-blue-900">homepage search</a>.
+        To search by Publisher ID, use the <Link href="/" className="underline hover:text-blue-900">homepage search</Link>.
       </p>
       <form onSubmit={handleSearch} className="flex gap-3">
         <input

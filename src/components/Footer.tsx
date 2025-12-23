@@ -29,7 +29,7 @@ export default function Footer() {
   const footerLinks = {
     product: [
       { name: 'Browse Publishers', href: '/publishers' },
-      { name: 'Browse by TLD', href: '/tld/com' },
+      { name: 'Browse by TLD', href: '/tld' },
       { name: 'Discover', href: '/discover' },
       { name: 'Search', href: '/' },
     ],

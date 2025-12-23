@@ -255,7 +255,6 @@ export function getTldKeywords(tld: string): string[] {
  */
 export function getTldFAQs(tld: string, stats: { domain_count: number; seller_count: number }): Array<{ question: string; answer: string }> {
   const info = TLD_DATABASE[tld];
-  const tldUpper = tld.toUpperCase();
   const tldDot = `.${tld}`;
 
   const baseFAQs: Array<{ question: string; answer: string }> = [

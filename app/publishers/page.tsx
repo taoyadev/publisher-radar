@@ -1,4 +1,5 @@
-import { Metadata } from 'next';
+/* eslint-disable react/no-unescaped-entities */
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { query } from '@/lib/db';
 import { PublisherListItem } from '@/lib/types';
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
     title: 'Top 100 AdSense Publishers by Domain Count | Complete Guide 2025',
     description: 'Complete guide to top Google AdSense publishers with industry statistics, revenue insights, and sellers.json transparency data',
     type: 'website',
-    url: 'https://publisherradar.com/publishers',
+    url: '/publishers',
   },
   twitter: {
     card: 'summary_large_image',
@@ -39,12 +40,11 @@ export const metadata: Metadata = {
 // ============================================================================
 
 export default async function TopPublishersPage() {
-  // Fetch top 100 publishers by domain count
   const result = await query<PublisherListItem>(`
     SELECT *
     FROM seller_adsense.publisher_list_view
     WHERE domain_count > 0
-    ORDER BY domain_count DESC, max_traffic DESC NULLS LAST
+    ORDER BY domain_count DESC, max_traffic DESC NULLS LAST, seller_id ASC
     LIMIT 100
   `);
 
@@ -78,8 +78,8 @@ export default async function TopPublishersPage() {
 
         {/* Stats Bar */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
               <div className="text-sm text-gray-500 mb-1">Total Publishers</div>
               <div className="text-3xl font-bold text-gray-900">{publishers.length}</div>
             </div>
@@ -92,7 +92,9 @@ export default async function TopPublishersPage() {
             <div>
               <div className="text-sm text-gray-500 mb-1">Avg Domains per Publisher</div>
               <div className="text-3xl font-bold text-green-600">
-                {Math.round(publishers.reduce((sum, p) => sum + Number(p.domain_count || 0), 0) / publishers.length).toLocaleString()}
+                {publishers.length > 0
+                  ? Math.round(publishers.reduce((sum, p) => sum + Number(p.domain_count || 0), 0) / publishers.length).toLocaleString()
+                  : '0'}
               </div>
             </div>
           </div>
@@ -177,7 +179,7 @@ export default async function TopPublishersPage() {
         </div>
 
         {/* Educational Content Section */}
-        <div className="mt-16 mb-12 prose prose-lg max-w-none">
+          <div className="mt-16 mb-12 prose prose-lg max-w-none">
           {/* Section 1: What Are Publishers? */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">

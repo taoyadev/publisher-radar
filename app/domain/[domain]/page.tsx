@@ -3,12 +3,12 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
   fetchDomainDetail,
-  fetchTopDomains,
   fetchPublishersByIds,
   fetchSimilarDomains,
   fetchDomainsByTld,
 } from '@/lib/ssg-queries';
 import ExternalLink from '@/components/ExternalLink';
+import { SITE_CONFIG } from '@/config/site';
 
 // ============================================================================
 // SSG/ISR CONFIGURATION
@@ -62,29 +62,19 @@ export async function generateMetadata({
     description,
     keywords: `${decodedDomain}, AdSense Domain, Google Publisher, Domain Verification, ${domainData.seller_ids.slice(0, 3).join(', ')}`,
     robots: {
-      index: false,
+      index: true,
       follow: true,
-      nocache: true,
     },
     openGraph: {
       title,
       description,
       type: 'website',
-      url: `https://publisherradar.com/domain/${decodedDomain}`,
-      images: [
-        {
-          url: '/og-domain.png',
-          width: 1200,
-          height: 630,
-          alt: `${decodedDomain} - AdSense Publishers`,
-        },
-      ],
+      url: `${SITE_CONFIG.url}/domain/${decodedDomain}`,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/og-domain.png'],
     },
     alternates: {
       canonical: `/domain/${decodedDomain}`,

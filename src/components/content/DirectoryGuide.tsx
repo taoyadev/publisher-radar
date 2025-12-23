@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 export default function DirectoryGuide() {
   return (
     <section className="mb-12">

@@ -18,18 +18,46 @@ async function refreshMaterializedViews() {
 
   try {
     const startTime = Date.now();
+    const results: RefreshResult[] = [];
 
-    // Call the PostgreSQL function that refreshes all views concurrently
-    const result = await query<RefreshResult>(`
-      SELECT * FROM seller_adsense.refresh_all_materialized_views();
-    `);
+    // List of views to refresh in order
+    const views = [
+      'all_domains_mv',
+      'domain_aggregation_view',
+      'publisher_list_view',
+      'tld_aggregation_view',
+    ];
+
+    // Refresh each view sequentially
+    for (const viewName of views) {
+      const viewStart = Date.now();
+      try {
+        console.log(`  Refreshing ${viewName}...`);
+        await query(`REFRESH MATERIALIZED VIEW CONCURRENTLY seller_adsense.${viewName}`);
+        const duration = Date.now() - viewStart;
+        console.log(`  ✅ ${viewName} (${duration}ms)`);
+        results.push({
+          view_name: viewName,
+          status: 'SUCCESS',
+          duration_ms: duration,
+        });
+      } catch (err: any) {
+        const duration = Date.now() - viewStart;
+        console.error(`  ❌ ${viewName}: ${err.message}`);
+        results.push({
+          view_name: viewName,
+          status: 'FAILED',
+          duration_ms: duration,
+        });
+      }
+    }
 
     const totalDuration = Date.now() - startTime;
 
-    console.log('📊 Refresh Results:');
+    console.log('\n📊 Refresh Results:');
     console.log('='.repeat(60));
 
-    result.rows.forEach(row => {
+    results.forEach(row => {
       const icon = row.status === 'SUCCESS' ? '✅' : '❌';
       console.log(`${icon} ${row.view_name}: ${row.status} (${row.duration_ms}ms)`);
     });

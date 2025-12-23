@@ -3,7 +3,9 @@ import { query } from '@/lib/db';
 import { ApiResponse, Seller } from '@/lib/types';
 import { validateSearchParams } from '@/lib/validation';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api-rate-limit';
-import { ZodError } from 'zod';
+type SellerRow = Seller & { total_count: string };
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   // Apply rate limiting
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     // Build WHERE clause
     const conditions: string[] = [];
-    const values: any[] = [];
+    const values: Array<string | number> = [];
     let paramCount = 1;
 
     // Enhanced query logic: search both sellers.domain and all_domains view
@@ -81,13 +83,14 @@ export async function GET(request: NextRequest) {
       LIMIT $${paramCount} OFFSET $${paramCount + 1}
     `;
 
-    const result = await query(combinedQuery, [...values, params.limit, offset]);
+    const result = await query<SellerRow>(combinedQuery, [...values, params.limit, offset]);
 
     const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
-    const data = result.rows.map(row => {
-      const { total_count, ...seller } = row;
+    const data: Seller[] = result.rows.map(row => {
+      const { total_count: unusedTotalCount, ...seller } = row;
+      void unusedTotalCount;
       return seller;
-    }) as Seller[];
+    });
 
     const rateLimitHeaders = getRateLimitHeaders(request, 'search');
 
@@ -101,11 +104,12 @@ export async function GET(request: NextRequest) {
       },
       { headers: rateLimitHeaders }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     // Log detailed error for debugging (server-side only)
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
     console.error('[API Error] /api/sellers/search:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
+      error: normalizedError.message,
+      stack: normalizedError.stack,
       timestamp: new Date().toISOString(),
     });
 

@@ -1,18 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { ApiResponse, TopPublisher } from '@/lib/types';
+import { rateLimit } from '@/lib/api-rate-limit';
+import { validateTopPublishersParams } from '@/lib/validation';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const rateLimitResult = await rateLimit(request, 'heavy');
+  if (rateLimitResult) return rateLimitResult;
+
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const sortBy = searchParams.get('sortBy') || 'traffic';
-    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 1000);
-    const offset = parseInt(searchParams.get('offset') || '0');
-    const minTraffic = parseInt(searchParams.get('minTraffic') || '0');
+    const validation = validateTopPublishersParams(request.nextUrl.searchParams);
+    if (!validation.success) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          data: null,
+          error: `Invalid parameters: ${validation.error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { sortBy, limit, minTraffic } = validation.data;
+    const offset = Math.max(parseInt(request.nextUrl.searchParams.get('offset') || '0'), 0);
 
     // Build ORDER BY clause based on sortBy parameter
     let orderByClause = '';
     switch (sortBy) {
+      case 'domains':
+        orderByClause = 'plv.domain_count DESC, plv.max_traffic DESC NULLS LAST, plv.seller_id ASC';
+        break;
       case 'newest':
         orderByClause = 'plv.first_seen_date DESC';
         break;
@@ -61,13 +79,16 @@ export async function GET(request: NextRequest) {
     );
     const total = parseInt(countResult.rows[0].total);
 
-    return NextResponse.json<ApiResponse<TopPublisher[]>>({
+    const response = NextResponse.json<ApiResponse<TopPublisher[]>>({
       data: publishers,
       error: null,
       total,
       page: Math.floor(offset / limit) + 1,
       limit,
     });
+
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    return response;
   } catch (error) {
     console.error('Top publishers API error:', error);
     return NextResponse.json<ApiResponse<null>>({

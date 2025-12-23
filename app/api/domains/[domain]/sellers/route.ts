@@ -1,14 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { ApiResponse, Seller } from '@/lib/types';
+import { rateLimit } from '@/lib/api-rate-limit';
+import { domainSchema } from '@/lib/validation';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ domain: string }> }
 ) {
+  const rateLimitResult = await rateLimit(request, 'default');
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const { domain: rawDomain } = await context.params;
     const domain = decodeURIComponent(rawDomain);
+
+    const parsedDomain = domainSchema.safeParse(domain);
+    if (!parsedDomain.success) {
+      return NextResponse.json<ApiResponse<null>>(
+        { data: null, error: parsedDomain.error.issues[0]?.message || 'Invalid domain' },
+        { status: 400 }
+      );
+    }
 
     // Join all_domains with sellers to get all seller details for a domain
     const sqlQuery = `
@@ -19,7 +34,7 @@ export async function GET(
       ORDER BY s.updated_at DESC
     `;
 
-    const result = await query(sqlQuery, [domain]);
+    const result = await query(sqlQuery, [parsedDomain.data]);
 
     const sellers = result.rows as Seller[];
 

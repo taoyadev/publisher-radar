@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { fetchTldDetail, fetchAllTlds, fetchPublishersByTld } from '@/lib/ssg-queries';
 import { getTldKeywords, getTldDescription, getTldFAQs, getRelatedTlds, getTldInfo, getTldEmoji } from '@/lib/tld-content';
 import TldFAQ from '@/components/TldFAQ';
+import { SITE_CONFIG } from '@/config/site';
 
 // ============================================================================
 // SSG/ISR CONFIGURATION
@@ -62,21 +63,12 @@ export async function generateMetadata({
       title,
       description: enhancedDescription,
       type: 'website',
-      url: `https://publisherradar.com/tld/${tld}`,
-      images: [
-        {
-          url: '/og-tld.png',
-          width: 1200,
-          height: 630,
-          alt: `.${tld} Domain Directory`,
-        },
-      ],
+      url: `${SITE_CONFIG.url}/tld/${tld}`,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description: enhancedDescription,
-      images: ['/og-tld.png'],
     },
     alternates: {
       canonical: `/tld/${tld}`,
@@ -112,7 +104,6 @@ export default async function TldPage({ params }: PageProps) {
   };
 
   const hasMorePages = total > 20;
-  const totalPages = Math.ceil(total / 100); // 100 per page for pagination
 
   // Get TLD info for educational content
   const tldInfo = getTldInfo(tldData.tld);
@@ -140,19 +131,19 @@ export default async function TldPage({ params }: PageProps) {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://publisherradar.com',
+        item: SITE_CONFIG.url,
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: 'TLD Directory',
-        item: 'https://publisherradar.com/tld',
+        item: `${SITE_CONFIG.url}/tld`,
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: `.${tld} Domains`,
-        item: `https://publisherradar.com/tld/${tld}`,
+        item: `${SITE_CONFIG.url}/tld/${tld}`,
       },
     ],
   };
@@ -167,11 +158,11 @@ export default async function TldPage({ params }: PageProps) {
       seller_count: tldData.seller_count,
       avg_traffic: tldData.avg_traffic,
     }),
-    url: `https://publisherradar.com/tld/${tld}`,
+    url: `${SITE_CONFIG.url}/tld/${tld}`,
     isPartOf: {
       '@type': 'WebSite',
       name: 'Publisher Radar',
-      url: 'https://publisherradar.com',
+      url: SITE_CONFIG.url,
     },
     about: {
       '@type': 'Thing',
@@ -194,7 +185,7 @@ export default async function TldPage({ params }: PageProps) {
         '@type': 'Organization',
         name: publisher.name || publisher.seller_id,
         identifier: publisher.seller_id,
-        url: `https://publisherradar.com/publisher/${publisher.seller_id}`,
+        url: `${SITE_CONFIG.url}/publisher/${publisher.seller_id}`,
         ...(publisher.primary_domain && {
           url: `https://${publisher.primary_domain}`,
         }),

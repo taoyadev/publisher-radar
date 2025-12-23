@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 export default function FAQ() {
   const faqs = [
     {
@@ -22,7 +23,7 @@ export default function FAQ() {
     },
     {
       question: 'How do I find a specific publisher?',
-      answer: 'Use the search bar on our homepage—it accepts three types of searches. First, you can search by Publisher ID (like pub-1234567890) for exact matches. Second, you can search by domain name (like example.com) to find which publisher owns that domain. Third, you can search by publisher name if they\'ve registered one. The search is debounced and returns results in real-time. If you\'re browsing rather than searching, you can use our directory pages sorted by traffic, domain count, or recent additions. We also have TLD-specific pages (like /tld/com) if you want to browse publishers by domain extension. And our daily snapshot pages (/new/YYYY-MM-DD) show publishers added on specific dates. Multiple ways to slice the data depending on what you need.',
+      answer: 'Use the search bar on our homepage—it accepts three types of searches. First, you can search by Publisher ID (like pub-1234567890) for exact matches. Second, you can search by domain name (like example.com) to find which publishers are associated with that domain. Third, you can search by publisher name if they\'ve registered one. The search is debounced and returns results in real-time. If you\'re browsing rather than searching, you can use our directory pages (like /publishers) and browse by TLD (like /tld or /tld/com). For recently observed domains, check /discover which shows the latest additions and updates.',
     },
     {
       question: 'What is "double verification"?',
@@ -94,7 +95,7 @@ export default function FAQ() {
           We're here to help you make the most of Publisher Radar
         </p>
         <a
-          href="mailto:support@example.com"
+          href="mailto:support@publisherradar.com"
           className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

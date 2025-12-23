@@ -4,13 +4,14 @@ import {
   fetchTopDomains,
   fetchAllTlds,
 } from '@/lib/ssg-queries';
+import { SITE_CONFIG } from '@/config/site';
 
 /**
  * Generate sitemap for top URLs
  * For 1M+ pages, we'll generate sitemap index (multiple sitemaps)
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://publisherradar.com';
+  const baseUrl = SITE_CONFIG.url;
 
   const now = new Date();
 
@@ -27,6 +28,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'daily',
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/tld`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/adsense-reverse-lookup`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/discover`,
+      lastModified: now,
+      changeFrequency: 'hourly',
+      priority: 0.7,
     },
   ];
 

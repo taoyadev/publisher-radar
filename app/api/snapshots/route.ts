@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { ApiResponse } from '@/lib/types';
+import { rateLimit } from '@/lib/api-rate-limit';
+
+export const dynamic = 'force-dynamic';
 
 interface DailySnapshot {
   id: number;
@@ -12,6 +15,9 @@ interface DailySnapshot {
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimitResult = await rateLimit(request, 'default');
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const limit = Math.min(parseInt(searchParams.get('limit') || '30'), 100);

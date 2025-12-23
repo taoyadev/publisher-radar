@@ -11,7 +11,7 @@ export default function Header() {
   const navigation = [
     { name: 'Home', href: '/', icon: '🏠' },
     { name: 'Publishers', href: '/publishers', icon: '👥' },
-    { name: 'TLDs', href: '/tld/com', icon: '🌐' },
+    { name: 'TLDs', href: '/tld', icon: '🌐' },
     { name: 'Reverse Lookup', href: '/adsense-reverse-lookup', icon: '🔍' },
     { name: 'Discover', href: '/discover', icon: '✨' },
   ];

@@ -20,13 +20,17 @@ const poolConfig: PoolConfig = isProduction
       database: process.env.DB_NAME || 'postgres',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
-      max: isBuild ? 50 : 20, // More connections during build
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
+      max: isBuild ? 50 : 10, // Reduce max connections to prevent accumulation
+      min: 2, // Keep minimum connections alive
+      idleTimeoutMillis: 60000, // Close idle connections after 1 minute
+      connectionTimeoutMillis: 30000, // 30s to establish connection (network latency)
+      statement_timeout: 15000, // 15s for query execution
+      query_timeout: 20000, // 20s total query timeout
+      idle_in_transaction_session_timeout: 15000,
       // No SSL for direct VPS connection
       ssl: false,
       keepAlive: true,
-      keepAliveInitialDelayMillis: 10000,
+      keepAliveInitialDelayMillis: 5000, // Start keepalive sooner
     }
   : {
       // Development configuration (Direct connection to VPS)
@@ -35,11 +39,15 @@ const poolConfig: PoolConfig = isProduction
       database: 'postgres',
       user: 'postgres',
       password: 'postgres',
-      max: isBuild ? 50 : 10, // More connections during SSG build
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 5000,
+      max: isBuild ? 50 : 5, // Fewer connections in dev
+      min: 1, // Keep at least 1 connection alive
+      idleTimeoutMillis: 30000, // 30s idle timeout
+      connectionTimeoutMillis: 30000, // 30s to establish connection
+      statement_timeout: 15000, // 15s for query execution
+      query_timeout: 20000, // 20s total query timeout
+      idle_in_transaction_session_timeout: 15000,
       keepAlive: true,
-      keepAliveInitialDelayMillis: 10000,
+      keepAliveInitialDelayMillis: 5000,
     };
 
 const pool = new Pool(poolConfig);
@@ -50,16 +58,19 @@ const pool = new Pool(poolConfig);
 
 let queryCount = 0;
 let totalQueryTime = 0;
-let slowQueryThreshold = 1000; // 1 second
+const slowQueryThreshold = 1000; // 1 second
 
-// Log pool status periodically in development
+// Log pool status periodically in development (less frequently to reduce noise)
+let lastLogTime = 0;
 if (process.env.NODE_ENV === 'development') {
   setInterval(() => {
-    if (queryCount > 0) {
-      console.log(`[DB Pool] Total clients: ${pool.totalCount}, Idle: ${pool.idleCount}, Waiting: ${pool.waitingCount}`);
-      console.log(`[DB Stats] Queries: ${queryCount}, Avg time: ${(totalQueryTime / queryCount).toFixed(2)}ms`);
+    const now = Date.now();
+    // Only log if queries happened and at least 5 minutes since last log
+    if (queryCount > 0 && (now - lastLogTime > 300000)) {
+      console.log(`[DB Pool] Total: ${pool.totalCount}, Idle: ${pool.idleCount}, Waiting: ${pool.waitingCount} | Queries: ${queryCount}, Avg: ${(totalQueryTime / queryCount).toFixed(0)}ms`);
+      lastLogTime = now;
     }
-  }, 60000); // Every minute
+  }, 300000); // Every 5 minutes
 }
 
 // Handle pool errors
@@ -67,14 +78,17 @@ pool.on('error', (err) => {
   console.error('[DB Pool] Unexpected error on idle client', err);
 });
 
+// Connection events - only log in verbose debug mode
+const VERBOSE_DB_LOGS = process.env.VERBOSE_DB_LOGS === 'true';
+
 pool.on('connect', () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (VERBOSE_DB_LOGS) {
     console.log('[DB Pool] New client connected');
   }
 });
 
 pool.on('remove', () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (VERBOSE_DB_LOGS) {
     console.log('[DB Pool] Client removed');
   }
 });
@@ -84,45 +98,56 @@ pool.on('remove', () => {
 // ============================================================================
 
 /**
- * Execute a database query with automatic monitoring and error handling
+ * Execute a database query with automatic monitoring, error handling, and retry logic
  * @param text - SQL query string
  * @param params - Query parameters
+ * @param retries - Number of retries on connection errors (default: 2)
  * @returns Query result
  */
-export async function query<T extends QueryResultRow = any>(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: any[]
+  params?: readonly unknown[],
+  retries: number = 2
 ): Promise<QueryResult<T>> {
   const start = Date.now();
 
   try {
-    const res = await pool.query<T>(text, params);
+    const res = await pool.query<T>(text, params as unknown[] | undefined);
     const duration = Date.now() - start;
 
     // Update stats
     queryCount++;
     totalQueryTime += duration;
 
-    // Log query performance
-    const shouldLog = process.env.NODE_ENV === 'development' || duration > slowQueryThreshold;
-
-    if (shouldLog) {
-      const queryPreview = text.substring(0, 100).replace(/\s+/g, ' ');
-      console.log(`[DB Query] ${duration}ms | ${res.rowCount} rows | ${queryPreview}...`);
-    }
-
-    // Warn on slow queries
+    // Only log slow queries to reduce noise
     if (duration > slowQueryThreshold) {
-      console.warn(`[DB Slow Query] ${duration}ms - consider optimization`);
+      const queryPreview = text.substring(0, 80).replace(/\s+/g, ' ');
+      console.warn(`[DB Slow] ${duration}ms | ${res.rowCount} rows | ${queryPreview}...`);
     }
 
     return res;
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - start;
-    console.error(`[DB Error] ${duration}ms | ${error.message}`);
-    console.error('Query:', text);
-    console.error('Params:', params);
-    throw error;
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    const isConnectionError = normalizedError.message.includes('Connection terminated') ||
+                              normalizedError.message.includes('connection timeout') ||
+                              normalizedError.message.includes('ECONNREFUSED') ||
+                              normalizedError.message.includes('ETIMEDOUT');
+
+    // Retry on connection errors
+    if (isConnectionError && retries > 0) {
+      console.warn(`[DB Retry] ${normalizedError.message} - retrying (${retries} left)...`);
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 1000 * (3 - retries)));
+      return query<T>(text, params, retries - 1);
+    }
+
+    console.error(`[DB Error] ${duration}ms | ${normalizedError.message}`);
+    if (process.env.NODE_ENV === 'development') {
+      const queryPreview = text.substring(0, 200).replace(/\s+/g, ' ');
+      console.error('Query:', queryPreview);
+    }
+    throw normalizedError;
   }
 }
 
